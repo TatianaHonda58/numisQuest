@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Carrinho | Loja PPP</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="/">🛒 Loja PPP</a>
+      <nav class="nav" id="nav"></nav>
+    </div>
+  </header>
+  <main class="container">
+    <h1>Carrinho</h1>
+    <p class="subtitle" id="vip-status"></p>
+    <div id="alert" class="alert hidden" role="alert"></div>
+
+    <div id="empty" class="card empty hidden">
+      <p>Seu carrinho está vazio.</p>
+      <a class="btn" href="/">Ver produtos</a>
+    </div>
+
+    <div id="cart" class="cart-layout hidden">
+      <section class="card table-wrap">
+        <table>
+          <thead>
+            <tr><th>Produto</th><th class="num">Preço</th><th>Qtd.</th><th class="num">Total</th><th></th></tr>
+          </thead>
+          <tbody id="items"></tbody>
+        </table>
+      </section>
+
+      <aside class="card">
+        <h2 style="margin-top:0;font-size:1.15rem">Finalizar compra</h2>
+        <div class="payment-options" role="radiogroup" aria-label="Forma de pagamento">
+          <label><input type="radio" name="payment" value="credit_card" checked> Cartão de crédito</label>
+          <label><input type="radio" name="payment" value="cash"> Dinheiro <span class="hint">(10% de desconto)</span></label>
+        </div>
+        <div id="summary"></div>
+        <button id="checkout" class="btn block" type="button" style="margin-top:16px">Finalizar compra</button>
+      </aside>
+    </div>
+  </main>
+  <script src="/js/app.js"></script>
+  <script>
+    const alertBox = document.getElementById('alert');
+    const itemsBody = document.getElementById('items');
+    const summaryBox = document.getElementById('summary');
+    const checkoutButton = document.getElementById('checkout');
+
+    const paymentMethod = () => document.querySelector('input[name="payment"]:checked').value;
+
+    async function init() {
+      try {
+        const user = await refreshUser();
+        renderVipStatus(user);
+        await loadCart();
+      } catch (error) {
+        showAlert(alertBox, error.message);
+      }
+    }
+
+    function renderVipStatus(user) {
+      const el = document.getElementById('vip-status');
+      if (user.isVip) {
+        el.innerHTML = '<span class="badge vip">VIP</span> Você é cliente VIP: frete grátis em todas as compras.';
+      } else {
+        const remaining = Math.max(0, 300 - user.totalSpent);
+        el.textContent = `Faltam ${money(remaining)} em compras para você se tornar VIP e ganhar frete grátis.`;
+      }
+    }
+
+    async function loadCart() {
+      const cart = await api('/cart');
+      const isEmpty = cart.items.length === 0;
+      document.getElementById('empty').classList.toggle('hidden', !isEmpty);
+      document.getElementById('cart').classList.toggle('hidden', isEmpty);
+      if (isEmpty) return;
+
+      itemsBody.innerHTML = cart.items.map((item) => `
+        <tr>
+          <td>${escapeHtml(item.name)}</td>
+          <td class="num">${money(item.unitPrice)}</td>
+          <td><input class="qty" type="number" min="1" max="${item.stock}" value="${item.quantity}"
+               data-id="${item.productId}" aria-label="Quantidade de ${escapeHtml(item.name)}"></td>
+          <td class="num">${money(item.lineTotal)}</td>
+          <td><button class="btn link" type="button" data-remove="${item.productId}">Remover</button></td>
+        </tr>`).join('');
+      await loadSummary();
+    }
+
+    async function loadSummary() {
+      const s = await api(`/checkout/summary?paymentMethod=${paymentMethod()}`);
+      summaryBox.innerHTML = `
+        <div class="summary-line"><span>Subtotal</span><span>${money(s.subtotal)}</span></div>
+        <div class="summary-line"><span>Desconto (dinheiro)</span><span class="discount">- ${money(s.discount)}</span></div>
+        <div class="summary-line"><span>Frete</span><span>${s.shipping === 0 ? 'Grátis (VIP)' : money(s.shipping)}</span></div>
+        <div class="summary-line total"><span>Total</span><span>${money(s.total)}</span></div>`;
+    }
+
+    itemsBody.addEventListener('change', async (event) => {
+      const input = event.target.closest('input.qty');
+      if (!input) return;
+      hideAlert(alertBox);
+      try {
+        await api(`/cart/items/${input.dataset.id}`, { method: 'PATCH', body: { quantity: Number(input.value) } });
+      } catch (error) {
+        showAlert(alertBox, error.message);
+      }
+      await loadCart();
+    });
+
+    itemsBody.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-remove]');
+      if (!button) return;
+      hideAlert(alertBox);
+      try {
+        await api(`/cart/items/${button.dataset.remove}`, { method: 'DELETE' });
+        await loadCart();
+      } catch (error) {
+        showAlert(alertBox, error.message);
+      }
+    });
+
+    document.querySelectorAll('input[name="payment"]').forEach((radio) =>
+      radio.addEventListener('change', () => loadSummary().catch((e) => showAlert(alertBox, e.message))));
+
+    checkoutButton.addEventListener('click', async () => {
+      hideAlert(alertBox);
+      checkoutButton.disabled = true;
+      try {
+        const result = await api('/checkout', { method: 'POST', body: { paymentMethod: paymentMethod() } });
+        session.save(null, result.user);
+        try { sessionStorage.setItem('ecommerce_last_order', JSON.stringify(result.order)); } catch { /* ignora */ }
+        window.location.href = '/pedido';
+      } catch (error) {
+        showAlert(alertBox, error.message);
+        checkoutButton.disabled = false;
+        await loadCart().catch(() => {});
+      }
+    });
+
+    if (requireLogin()) init();
+  </script>
+</body>
+</html>

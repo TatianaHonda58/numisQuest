@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cadastro | Loja PPP</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="/">🛒 Loja PPP</a>
+      <nav class="nav" id="nav"></nav>
+    </div>
+  </header>
+  <main class="container">
+    <form id="register-form" class="card form" novalidate>
+      <h1>Criar conta</h1>
+      <p class="subtitle">Cadastre-se para comprar na Loja PPP.</p>
+      <div id="alert" class="alert hidden" role="alert"></div>
+      <div class="field">
+        <label for="name">Nome</label>
+        <input id="name" name="name" type="text" autocomplete="name" required minlength="2">
+      </div>
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input id="email" name="email" type="email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="password">Senha</label>
+        <input id="password" name="password" type="password" autocomplete="new-password" required minlength="6">
+        <span class="hint">Mínimo de 6 caracteres.</span>
+      </div>
+      <div class="field">
+        <label for="confirm">Confirmar senha</label>
+        <input id="confirm" name="confirm" type="password" autocomplete="new-password" required>
+      </div>
+      <button class="btn block" type="submit">Cadastrar</button>
+      <p class="hint">Já tem conta? <a href="/login">Entrar</a></p>
+    </form>
+  </main>
+  <script src="/js/app.js"></script>
+  <script>
+    const form = document.getElementById('register-form');
+    const alertBox = document.getElementById('alert');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      hideAlert(alertBox);
+      if (form.password.value !== form.confirm.value) {
+        showAlert(alertBox, 'As senhas não conferem.');
+        return;
+      }
+      const button = form.querySelector('button');
+      button.disabled = true;
+      try {
+        await api('/auth/register', {
+          method: 'POST',
+          body: { name: form.name.value, email: form.email.value, password: form.password.value }
+        });
+        window.location.href = '/login?cadastro=ok';
+      } catch (error) {
+        showAlert(alertBox, error.message);
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
