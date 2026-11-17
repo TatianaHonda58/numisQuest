@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Produtos | Loja PPP</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="/">🛒 Loja PPP</a>
+      <nav class="nav" id="nav"></nav>
+    </div>
+  </header>
+  <main class="container">
+    <h1>Produtos</h1>
+    <p class="subtitle">Pague em dinheiro e ganhe 10% de desconto. Clientes VIP têm frete grátis.</p>
+    <div id="alert" class="alert hidden" role="alert"></div>
+    <div id="products" class="grid"></div>
+  </main>
+  <script src="/js/app.js"></script>
+  <script>
+    const ICONS = [['teclado', '⌨️'], ['mouse', '🖱️'], ['monitor', '🖥️']];
+    const iconFor = (name) => (ICONS.find(([key]) => name.toLowerCase().includes(key)) || [null, '📦'])[1];
+    const alertBox = document.getElementById('alert');
+    const list = document.getElementById('products');
+
+    async function loadProducts() {
+      const { products } = await api('/products');
+      list.innerHTML = products.map((p) => `
+        <article class="card product" data-testid="product-${p.id}">
+          <div class="product-thumb" aria-hidden="true">${iconFor(p.name)}</div>
+          <h2>${escapeHtml(p.name)}</h2>
+          <p>${escapeHtml(p.description)}</p>
+          <div class="price">${money(p.price)}</div>
+          <div class="stock ${p.stock === 0 ? 'out' : ''}">
+            ${p.stock === 0 ? 'Sem estoque' : `${p.stock} em estoque`}
+          </div>
+          <form class="row add-form" data-id="${p.id}">
+            <input class="qty" type="number" name="quantity" min="1" max="${p.stock}" value="1"
+              aria-label="Quantidade" ${p.stock === 0 ? 'disabled' : ''}>
+            <button class="btn" type="submit" ${p.stock === 0 ? 'disabled' : ''}>Adicionar ao carrinho</button>
+          </form>
+        </article>`).join('');
+    }
+
+    list.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!requireLogin()) return;
+      const form = event.target;
+      const button = form.querySelector('button');
+      button.disabled = true;
+      try {
+        const cart = await api('/cart/items', {
+          method: 'POST',
+          body: { productId: form.dataset.id, quantity: Number(form.quantity.value) }
+        });
+        showAlert(alertBox, `Produto adicionado ao carrinho. Itens no carrinho: ${cart.totalItems}.`, 'success');
+      } catch (error) {
+        showAlert(alertBox, error.message);
+      } finally {
+        button.disabled = false;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+
+    loadProducts().catch((error) => showAlert(alertBox, error.message));
+  </script>
+</body>
+</html>

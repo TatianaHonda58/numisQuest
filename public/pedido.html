@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pedido confirmado | Loja PPP</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="/">🛒 Loja PPP</a>
+      <nav class="nav" id="nav"></nav>
+    </div>
+  </header>
+  <main class="container">
+    <div id="content" class="card form" style="max-width:560px"></div>
+  </main>
+  <script src="/js/app.js"></script>
+  <script>
+    const content = document.getElementById('content');
+    let order = null;
+    try { order = JSON.parse(sessionStorage.getItem('ecommerce_last_order')); } catch { /* ignora */ }
+
+    if (!order) {
+      content.innerHTML = '<p class="empty">Nenhum pedido recente. <a href="/">Ver produtos</a></p>';
+    } else {
+      const payment = order.paymentMethod === 'cash' ? 'Dinheiro' : 'Cartão de crédito';
+      content.innerHTML = `
+        <div class="alert success">Compra finalizada com sucesso!</div>
+        ${order.becameVip ? '<div class="alert info"><strong>Parabéns!</strong> Você se tornou cliente <span class="badge vip">VIP</span> e terá frete grátis nas próximas compras.</div>' : ''}
+        <h1>Pedido confirmado</h1>
+        <p class="subtitle">Pedido nº ${escapeHtml(order.id)} · Pagamento: ${payment}</p>
+        <table>
+          <thead><tr><th>Produto</th><th>Qtd.</th><th class="num">Total</th></tr></thead>
+          <tbody>
+            ${order.items.map((i) => `<tr><td>${escapeHtml(i.name)}</td><td>${i.quantity}</td><td class="num">${money(i.lineTotal)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+        <div style="margin-top:12px">
+          <div class="summary-line"><span>Subtotal</span><span>${money(order.subtotal)}</span></div>
+          <div class="summary-line"><span>Desconto</span><span class="discount">- ${money(order.discount)}</span></div>
+          <div class="summary-line"><span>Frete</span><span>${order.shipping === 0 ? 'Grátis (VIP)' : money(order.shipping)}</span></div>
+          <div class="summary-line total"><span>Total pago</span><span>${money(order.total)}</span></div>
+        </div>
+        <a class="btn block" href="/" style="display:block;text-align:center;margin-top:20px">Continuar comprando</a>`;
+    }
+  </script>
+</body>
+</html>
