@@ -24,9 +24,9 @@ A aplicação possui cinco funcionalidades principais:
 |---|---|---|
 | **Login** | `/login` | `POST /api/auth/login` |
 | **Cadastro** | `/cadastro` | `POST /api/auth/register` |
-| **Catálogo de Moedas e Cédulas** | `/` (vitrine com filtros e ficha técnica) | `GET /api/items` e `GET /api/items/:id` |
+| **Catálogo de Moedas e Cédulas** | `/` (vitrine com filtros e ficha técnica) | `GET /api/items` e `GET /api/items/{id}` |
 | **Identificador de Moedas** | `/identificador` | `POST /api/items/identify` |
-| **Desafios e Conquistas** | `/desafios` | `GET /api/challenges` e `POST /api/challenges/:id/submit` |
+| **Desafios e Conquistas** | `/desafios` | `GET /api/challenges` e `POST challenges/{id}/submit` |
 
 ### Tecnologias
 
