@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Desafios e Conquistas — NumisQuest</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="header__inner">
+      <a class="brand" href="/">NumisQuest</a>
+      <nav class="nav" id="nav"></nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1>🏆 Desafios e Conquistas</h1>
+    <p class="subtitle">Complete missões diárias, quizzes e desafios de identificação para ganhar XP e desbloquear medalhas.</p>
+
+    <div id="alert" hidden></div>
+
+    <!-- Painel de Progresso e Medalhas -->
+    <section id="progress-panel" class="summary-box"></section>
+
+    <h2 style="margin: 24px 0 12px; color: #361b06;">Quadro de Medalhas</h2>
+    <div id="medals-grid" class="grid" style="grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); margin-bottom: 32px;"></div>
+
+    <h2 style="margin: 24px 0 12px; color: #361b06;">Desafios Disponíveis</h2>
+    <div id="challenges-list" class="grid"></div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script>
+    async function loadChallengesPage() {
+      if (!requireAuth()) return;
+      const alertEl = document.getElementById('alert');
+
+      try {
+        const user = await refreshUser();
+        renderHeader();
+
+        const { challenges, medalhas } = await apiFetch('/api/challenges');
+
+        const concluidosCount = challenges.filter((c) => c.concluido).length;
+        document.getElementById('progress-panel').innerHTML = `
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <strong>Explorador(a):</strong> ${user.name} <span class="badge">${user.nivel}</span><br/>
+              <span class="item-card__meta">Desafios concluídos: ${concluidosCount} de ${challenges.length}</span>
+            </div>
+            <div class="row">
+              <div style="font-size:1.35rem; font-weight:800; color:var(--primary); margin-right:12px;">
+                Pontuação Total: ${user.pontos} XP
+              </div>
+              <button type="button" class="btn btn--danger" onclick="resetProgress()" ${user.pontos === 0 && concluidosCount === 0 ? 'disabled' : ''}>
+                Resetar Jornada
+              </button>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('medals-grid').innerHTML = medalhas.map((m) => `
+          <div class="card" style="opacity: ${m.desbloqueada ? '1' : '0.55'}; border-top-color: ${m.desbloqueada ? '#15803d' : '#cbb389'};">
+            <div style="font-size:2rem; margin-bottom:6px;">${m.icone}</div>
+            <strong>${m.titulo}</strong><br/>
+            <span class="badge ${m.desbloqueada ? 'badge--success' : ''}" style="margin:6px 0;">
+            ${m.desbloqueada ? '✓ Desbloqueada' : '🔒 Bloqueada'}
+            </span>
+            <p class="item-card__meta">${m.descricao}</p>
+          </div>
+        `).join('');
+
+        document.getElementById('challenges-list').innerHTML = challenges.map((ch) => `
+          <article class="card item-card">
+            <div class="row" style="justify-content:space-between;">
+              <span class="badge">${ch.categoria} • ${ch.dificuldade}</span>
+              <span class="badge badge--raro">+${ch.pontosRecompensa} XP</span>
+            </div>
+
+            <h3>${ch.titulo}</h3>
+            <p>${ch.enunciado}</p>
+
+            ${ch.dica ? `<p class="item-card__meta"><em>💡 Dica: ${ch.dica}</em></p>` : ''}
+
+            ${ch.concluido ? `
+              <div class="alert alert--success" style="margin-top:auto; margin-bottom:0;">
+                ✅ Desafio já concluído! Pontos e medalha computados.
+              </div>
+            ` : `
+              <form onsubmit="submitAnswer(event, '${ch._id}')" style="margin-top:auto; display:flex; flex-direction:column; gap:8px;">
+                ${ch.opcoes.map((opt, idx) => `
+                  <label style="display:flex; align-items:center; gap:8px; font-weight:400; cursor:pointer; background:#fffaf0; padding:8px 10px; border:1px solid var(--border); border-radius:6px;">
+                    <input type="radio" name="opt-${ch._id}" value="${idx}" required />
+                    <span>${opt}</span>
+                  </label>
+                `).join('')}
+                <button type="submit" class="btn" style="margin-top:6px;">Enviar Resposta</button>
+              </form>
+            `}
+          </article>
+        `).join('');
+      } catch (err) {
+        showAlert(alertEl, err.message);
+      }
+    }
+
+    async function submitAnswer(event, challengeId) {
+      event.preventDefault();
+      const alertEl = document.getElementById('alert');
+      clearAlert(alertEl);
+
+      const selected = document.querySelector(`input[name="opt-${challengeId}"]:checked`);
+      if (!selected) return;
+
+      try {
+        const res = await apiFetch(`/api/challenges/${challengeId}/submit`, {
+          method: 'POST',
+          body: { selectedOptionIndex: Number(selected.value) }
+        });
+
+        if (res.acertou) {
+          showAlert(alertEl, `${res.mensagem} ${res.explicacaoHistorica || ''}`, 'success');
+          await loadChallengesPage();
+        } else {
+          showAlert(alertEl, res.mensagem, 'error');
+        }
+      } catch (err) {
+        showAlert(alertEl, err.message, 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadChallengesPage);
+
+  async function resetProgress() {
+      const alertEl = document.getElementById('alert');
+      clearAlert(alertEl);
+      try {
+        const res = await apiFetch('/api/challenges/progress', { method: 'DELETE' });
+        showAlert(alertEl, res.message, 'success');
+        await loadChallengesPage();
+      } catch (err) {
+        showAlert(alertEl, err.message, 'error');
+      }
+    }
+      
+  </script>
+</body>
+</html>

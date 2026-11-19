@@ -1,177 +1,205 @@
-# 🛒 Loja PPP — API REST e Site Web de E-commerce
+# 🧭 NumisQuest — API REST e Site Web de Numismática
 
 ## O que é esta aplicação
 
-Um e-commerce simples, com uma **API REST** e um **site Web**, criado para estudo e prática de testes.
-A aplicação tem só quatro funcionalidades:
+Uma plataforma interativa de numismática, com uma **API REST** e um **site Web**, criada para estudo e prática de desenvolvimento e testes de software.
+---
+
+## Regras de negócio
+
+1. **Unicidade de Cadastro:** Não permite cadastrar dois exploradores com o mesmo e-mail ou nome de usuário (`username`). Em caso de duplicidade, a API retorna **HTTP 409**.
+2. **Identificador de Moedas e Cédulas:** O endpoint `POST /api/items/identify` exige que ao menos **1 critério** seja preenchido (país, tipo, ano aproximado com margem de ±5 anos, valor facial, material, formato ou característica visual). Se todos os campos vierem vazios, retorna **HTTP 400**. As correspondências encontradas são ordenadas pelo percentual de compatibilidade.
+3. **Progressão por Níveis de Experiência (XP):** Ao acertar desafios, o explorador acumula pontos (XP) e evolui automaticamente de nível:
+   - *Explorador Iniciante:* `0` a `99` XP
+   - *Curador de Museu:* `100` a `249` XP
+   - *Mestre Numismata:* `250+` XP
+4. **Idempotência de Desafios (Anti-Farm):** Cada desafio concluído só concede XP e medalhas uma única vez por usuário. Tentar enviar novamente uma resposta para um desafio já finalizado retorna HTTP 422. Respostas incorretas retornam HTTP 200 com acertou: false e pontosGanhos: 0, permitindo nova tentativa.
+
+
+### Funcionalidades
+
+A aplicação possui cinco funcionalidades principais:
 
 | Funcionalidade | Site Web | API |
 |---|---|---|
 | **Login** | `/login` | `POST /api/auth/login` |
 | **Cadastro** | `/cadastro` | `POST /api/auth/register` |
-| **Carrinho** | `/` (vitrine) e `/carrinho` | `GET/POST/PATCH/DELETE /api/cart...` |
-| **Finalização de Compra** | `/carrinho` → `/pedido` | `GET /api/checkout/summary` e `POST /api/checkout` |
+| **Catálogo de Moedas e Cédulas** | `/` (vitrine com filtros e ficha técnica) | `GET /api/items` e `GET /api/items/:id` |
+| **Identificador de Moedas** | `/identificador` | `POST /api/items/identify` |
+| **Desafios e Conquistas** | `/desafios` | `GET /api/challenges` e `POST /api/challenges/:id/submit` |
 
-Tecnologias: Node.js, Express 5, Mongoose e **mongodb-memory-server** (MongoDB em memória). A autenticação usa JWT (token Bearer válido por 2 horas). O site é feito em HTML, CSS e JavaScript puro, servido pela própria API.
+### Tecnologias
 
-> ⚠️ O banco de dados é **em memória**: toda vez que a aplicação é reiniciada, os dados voltam ao estado inicial (veja [Dados de teste](#quais-dados-de-teste-estão-incluídos)).
+- **Backend:** Node.js, Express, Mongoose, `mongodb-memory-server`, JWT (`jsonwebtoken`), `bcryptjs`
+- **Documentação:** Swagger UI (`swagger-ui-express`) com especificação OpenAPI em `docs/swagger.yaml`
+- **Frontend:** HTML5, CSS3 (tema Mapa do Tesouro) e JavaScript puro, servido pela própria API.
+
+*Observação:* O banco de dados é em memória: toda vez que a aplicação é reiniciada, os dados voltam ao estado inicial ([src/database/seed.js](src/database/seed.js)).
 
 ## Como instalar
 
-Pré-requisitos: **Node.js 18 ou superior** e **npm**.
+- Pré-requisitos: **Node.js 18 ou superior** e **npm**.
 
 ```bash
 git clone <url-deste-repositorio>
-cd ppp2026-02
+cd cd numisquest
 npm install
 ```
 
-Na primeira execução, o `mongodb-memory-server` baixa o binário do MongoDB (cerca de 100 MB). Ele fica em cache nas execuções seguintes.
-
 ## Como executar
 
+1. Instale as dependências:
+```bash
+npm install
+```   
+
+2. Inicie o servidor:
 ```bash
 npm start
 ```
 
-Para desenvolvimento, com reinício automático ao salvar arquivos:
-
+3. Para desenvolvimento, com reinício automático ao salvar arquivos:
 ```bash
 npm run dev
 ```
 
-A aplicação sobe na porta **3030**. Para usar outra porta:
-
-```bash
+4. A aplicação sobe na porta **3000**. Para usar outra porta:
+ ```bash
 PORT=4000 npm start
-```
+```   
 
-Variáveis de ambiente opcionais:
+5. Variáveis de ambiente opcionais:
 
 | Variável | Padrão | Descrição |
 |---|---|---|
-| `PORT` | `3030` | Porta HTTP da aplicação |
-| `JWT_SECRET` | `ppp-ecommerce-dev-secret` | Segredo usado para assinar os tokens JWT |
+| `PORT` | `3000` | Porta HTTP da aplicação |
+| `JWT_SECRET` | `numisquest-dev-secret` | Chave de assinatura dos tokens JWT |
 
-## Quais dados de teste estão incluídos
+## Dados de teste pré-cadastrados
 
-Os dados são carregados automaticamente a cada inicialização ([src/database/seed.js](src/database/seed.js)).
+Os dados são carregados automaticamente com 3 exploradores, 3 peças numismáticas e 3 desafios cada inicialização (src/database/seed.js).
 
-### Usuários
+### Exploradores (Usuários)
 
-| Nome | E-mail | Senha | Total já gasto | VIP | Para que serve |
-|---|---|---|---|---|---|
-| Ana Silva | `ana@email.com` | `123456` | R$ 0,00 | Não | Cliente novo, paga frete |
-| Bruno Souza | `bruno@email.com` | `123456` | R$ 280,00 | Não | Vira VIP na próxima compra (faltam R$ 20,00) |
-| Carla Lima | `carla@email.com` | `123456` | R$ 450,00 | **Sim** | Cliente VIP, frete grátis |
-
-### Produtos
-
-| Produto | Preço | Estoque | Para que serve |
-|---|---|---|---|
-| Teclado Mecânico | R$ 250,00 | 10 | Produto com bastante estoque |
-| Mouse Sem Fio | R$ 89,90 | 5 | Estoque baixo, bom para testar o limite |
-| Monitor 24" Full HD | R$ 899,00 | **0** | Sem estoque, não pode ir para o carrinho |
-
-## Quais são as regras de negócio
-
-1. **Desconto para pagamento em dinheiro:** se o cliente pagar em dinheiro (`paymentMethod: "cash"`), recebe **10% de desconto** sobre o subtotal dos produtos. O desconto não incide sobre o frete. Pagamento com cartão de crédito (`credit_card`) não tem desconto.
-2. **Carrinho só com estoque:** um produto só pode ser adicionado ao carrinho se houver estoque. A quantidade total do produto no carrinho não pode passar do estoque disponível (resposta **HTTP 422**). O estoque é validado de novo e baixado ao finalizar a compra.
-3. **Frete grátis só para VIP:** clientes que não são VIP pagam **frete fixo de R$ 20,00**. Clientes **VIP** têm **frete grátis** em todas as compras. O cliente se torna VIP quando o **total gasto** em compras (soma dos totais pagos) chega a **R$ 300,00**. A compra que atinge esse valor ainda paga frete; o frete grátis vale **a partir da compra seguinte**.
-
-Fórmula do total de uma compra:
-
-```
-subtotal = Σ (preço × quantidade)
-desconto = 10% do subtotal, se o pagamento for em dinheiro; senão 0
-frete    = 0 se o cliente já for VIP; senão R$ 20,00
-total    = subtotal − desconto + frete
-```
-
-Exemplos com os dados de teste:
-
-| Cliente | Carrinho | Pagamento | Subtotal | Desconto | Frete | Total |
+| Nome | Username | E-mail | Senha | Pontuação (XP) | Nível | Para que serve |
 |---|---|---|---|---|---|---|
-| Ana | 1 Teclado | Dinheiro | 250,00 | 25,00 | 20,00 | **245,00** |
-| Ana | 1 Teclado | Cartão | 250,00 | 0,00 | 20,00 | **270,00** |
-| Carla (VIP) | 1 Teclado | Dinheiro | 250,00 | 25,00 | 0,00 | **225,00** |
-| Bruno | 1 Mouse | Cartão | 89,90 | 0,00 | 20,00 | **109,90** → Bruno passa a ser VIP |
+| Denise Moraes | `denise_exploradora` | `denise@email.com` | `123456` | 0 XP | Explorador Iniciante | Usuária nova, nenhum desafio concluído (ideal para testar progressão desde o início) |
+| Felipe Santos | `felipe_curador` | `felipe@email.com` | `123456` | 125 XP | Curador de Museu | Usuário que concluiu 1 desafio e possui a medalha Primeiro Passo (bom para testar bloqueio HTTP 422 de desafio repetido) |
+| Poliana Carvalho | `poliana_mestre` | `poliana@email.com` | `123456` | 275 XP | Mestre Numismata | Nível máximo alcançado e todas as 4 medalhas desbloqueadas |
 
-## Quais são as URLs importantes para acessar a aplicação
+### Peças do Catálogo
 
-Com a aplicação rodando localmente:
+| Título | Tipo | País | Ano | Material | Código | Para que serve |
+|---|---|---|---|---|---|---|
+| 100 Réis - República Velha (1901) | Moeda | Brasil | 1901 | Cuproníquel | KM# 503 | Peça antiga de circulação comum; ótima para testar filtros por ano (`1901`) e material (`Cuproníquel`) |
+| 1 Real - Entrega da Bandeira Olímpica (2012) | Moeda | Brasil | 2012 | Cuproníquel e Aço revestido de bronze (Bimetálica) | Y.REAL-BM-070 | Moeda comemorativa bimetálica; ótima para testar o Identificador por características visuais (`Bandeira Olímpica`) |
+| 50.000 Cruzeiros Reais - Baiana (1994) | Cédula | Brasil | 1994 | Papel-moeda | P#241 | Única cédula do catálogo inicial; ideal para testar filtro por tipo (`Cédula`) e período (`Cruzeiro Real`) |
 
-| O quê | URL |
+### Desafios
+
+| Título | Categoria | Dificuldade | Recompensa | Medalha Associada | 
+|---|---|---|---|---|
+| Missão Diária: A Joia das Olimpíadas Rio 2016 | Missão Diária | Fácil | +25 XP | `primeiro_passo` (Primeiro Passo) |
+| Desafio de Identificação: Peça Mistério de 1901 | Identificação | Médio | +50 XP | `olho_de_lince` (Olho de Lince) |
+| Quiz Histórico: A Cédula da Baiana | Quiz | Médio | +50 XP | `historiador_numismatico` (Historiador Numismático) |
+
+### Fórmula do índice de compatibilidade no Identificador:
+```
+compatibilidade (%) = arredondar((critérios_atendidos / critérios_informados) × 100)
+```
+
+- Exemplos com os dados de teste:
+
+| Explorador | Ação | XP Anterior | Ganho | XP Final | Novo Nível / Resultado |
+|---|---|---|---|---|---|
+| Denise (`0 XP`) | Acerta Desafio 2 (+50 XP) | 0 XP | +50 XP | **50 XP** | Explorador *Iniciante* + Medalhas Primeiro Passo e Olho de Lince |
+| Denise (`50 XP`) | Acerta Desafio 3 (+50 XP) | 50 XP | +50 XP | **100** XP | Evolui para *Curador de Museu* + Medalha Historiador Numismático |
+| Felipe (`125 XP`) | Tenta refazer Desafio 1 | 125 XP | - | **125 XP** | Bloqueado com *HTTP 422* (desafio já concluído) |
+|Poliana (`275 XP`) | Consulta perfil (`/api/users/me`) | 275 XP | - | **275 XP** | *Mestre Numismata* (todas as 4 medalhas desbloqueadas) |
+
+### Acesse no navegador:
+| Local | URL |
 |---|---|
-| Site Web (vitrine de produtos) | http://localhost:3030 |
-| Login | http://localhost:3030/login |
-| Cadastro | http://localhost:3030/cadastro |
-| Carrinho e Finalização de Compra | http://localhost:3030/carrinho |
-| API REST (base) | http://localhost:3030/api |
-| Health check | http://localhost:3030/api/health |
-| **Swagger UI** (documentação interativa) | http://localhost:3030/api-docs |
-| Arquivo YAML da especificação | http://localhost:3030/api-docs/swagger.yaml |
+| Site Web (Catálogo de Moedas e Cédulas) | `http://localhost:3000` |
+| Identificador de Moedas | `http://localhost:3000/identificador` |
+| Desafios e Conquistas | `http://localhost:3000/desafios` |
+| Login |  `http://localhost:3000/login` |
+| Cadastro | `http://localhost:3000/cadastro` |
+| API REST (base) | `http://localhost:3000/api` |
+| Health check | `http://localhost:3000/api/health` |
+| **Swagger UI** (documentação interativa) | `http://localhost:3000/api-docs` |
+| Arquivo YAML da especificação | `http://localhost:3000/api-docs/swagger.yaml` |
 
 ### Endpoints da API
 
 | Método | Rota | Autenticação | Descrição |
 |---|---|---|---|
-| POST | `/api/auth/register` | — | Cadastra um cliente |
-| POST | `/api/auth/login` | — | Faz login e retorna o token JWT |
-| GET | `/api/users/me` | Bearer | Dados do cliente (total gasto e status VIP) |
-| GET | `/api/products` | — | Lista os produtos |
-| GET | `/api/products/{id}` | — | Detalha um produto |
-| GET | `/api/cart` | Bearer | Mostra o carrinho |
-| POST | `/api/cart/items` | Bearer | Adiciona um produto (`productId`, `quantity`) |
-| PATCH | `/api/cart/items/{productId}` | Bearer | Altera a quantidade |
-| DELETE | `/api/cart/items/{productId}` | Bearer | Remove um produto |
-| DELETE | `/api/cart` | Bearer | Esvazia o carrinho |
-| GET | `/api/checkout/summary?paymentMethod=cash` | Bearer | Prévia de subtotal, desconto, frete e total |
-| POST | `/api/checkout` | Bearer | Finaliza a compra (`paymentMethod`: `cash` ou `credit_card`) |
+| GET | `/api/health` | - | Verifica a disponibilidade da API |
+| POST | `/api/auth/register` | - | Cadastra um novo explorador |
+| POST | `/api/auth/login` | - | Faz login e retorna o token JWT |
+| GET | `/api/users/me` | Bearer | Dados do explorador (XP, nível e quadro de medalhas) |
+| GET | `/api/items` | - | Lista peças do catálogo com filtros (`tipo`, `pais`, `ano`, `material`, `q`) |
+| GET | `/api/items/{id}` | - | Detalha a ficha técnica e histórica de uma peça |
+| POST | `/api/items/identify` | - | Identifica peças por características físicas e visuais |
+| GET | `/api/challenges` | Bearer | Lista desafios disponíveis e status de conclusão |
+| POST | `/api/challenges/{id}/submit` | Bearer | Envia resposta (selectedOptionIndex), valida acerto e computa XP |
+| PATCH | `/api/users/me` | Bearer | Atualiza nome ou username do explorador autenticado | `200`, `400`, `401`, `409` |
+| DELETE | `/api/challenges/progress` | Bearer | Reseta XP, desafios concluídos e medalhas do explorador | `200`, `401`, `404` |
 
-A especificação completa está em [docs/swagger.yaml](docs/swagger.yaml).
+A especificação completa está em *docs/swagger.yaml*.
+
+### Códigos de resposta
+
+| Código | Quando acontece |
+|---|---|
+| `200` / `201` | Sucesso |
+| `400` | Dados inválidos (campo obrigatório ausente, nenhum critério no identificador, índice de opção/ID inválido ou JSON malformado) |
+| `401` | Token ausente/inválido ou e-mail/senha incorretos |
+| `404` | Explorador, peça numismática ou desafio não encontrado |
+| `409` | E-mail ou nome de usuário já cadastrado |
+| `422` | Regra de negócio violada (tentativa de concluir novamente um desafio já finalizado) |
 
 ### Exemplo rápido com curl
 
 ```bash
-TOKEN=$(curl -s -X POST http://localhost:3030/api/auth/login \
+TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"ana@email.com","password":"123456"}' | node -pe 'JSON.parse(require("fs").readFileSync(0)).token')
+  -d '{"email":"denise@email.com","password":"123456"}' | node -pe 'JSON.parse(require("fs").readFileSync(0)).token')
 
-curl -s http://localhost:3030/api/products
+curl -s "http://localhost:3000/api/items?tipo=Moeda"
 
-curl -s -X POST http://localhost:3030/api/cart/items \
+curl -s -X POST http://localhost:3000/api/items/identify \
+  -H 'Content-Type: application/json' \
+  -d '{"pais":"Brasil","material":"Cuproníquel","anoEmissao":1901}'
+
+curl -s http://localhost:3000/api/challenges \
+  -H "Authorization: Bearer $TOKEN"
+
+curl -s -X POST http://localhost:3000/api/challenges/<id-do-desafio>/submit \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-  -d '{"productId":"<id-do-produto>","quantity":1}'
-
-curl -s -X POST http://localhost:3030/api/checkout \
-  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-  -d '{"paymentMethod":"cash"}'
-```
+  -d '{"selectedOptionIndex":1}'
+  ```
 
 ## Estrutura do projeto
 
 ```
 ├── docs/swagger.yaml          # Especificação OpenAPI 3 da API
-├── public/                    # Site Web (HTML, CSS e JS)
+├── public/                    # Site Web (HTML, CSS, JS e imagens das peças)
+│   ├── css/style.css          # Tema visual Mapa do Tesouro
+│   ├── images/                # Fotografias de anverso e reverso das peças
+│   ├── js/app.js              # Sessão JWT, cabeçalho dinâmico e helper de fetch
+│   ├── index.html             # Catálogo de moedas e cédulas com filtros
+│   ├── identificador.html     # Ferramenta de identificação por características
+│   ├── desafios.html          # Quizzes, missões e quadro de medalhas
+│   ├── login.html             # Tela de autenticação
+│   └── cadastro.html          # Tela de cadastro de novo explorador
 └── src/
     ├── server.js              # Sobe o MongoDB em memória, carrega os dados e inicia o servidor
     ├── app.js                 # Configuração do Express, rotas e Swagger UI
-    ├── config.js              # Porta, JWT e valores das regras de negócio
-    ├── database/              # Conexão (mongodb-memory-server) e dados de teste
-    ├── models/                # User, Product, Cart e Order (Mongoose)
-    ├── routes/                # auth, users, products, cart e checkout
-    ├── services/              # Regras de carrinho, preço e finalização de compra
-    └── middleware/            # Autenticação JWT e tratamento de erros
+    ├── config/env.js          # Porta, JWT e parâmetros dos níveis de XP
+    ├── database/              # Conexão (mongodb-memory-server) e dados de teste (seed.js)
+    ├── models/                # User, Item e Challenge (Mongoose)
+    ├── routes/                # index, auth, users, item e challenge
+    ├── services/              # Lógica do Identificador de Moedas e da Gamificação
+    └── middlewares/           # Autenticação JWT e tratamento centralizado de erros
 ```
-
-## Códigos de resposta
-
-| Código | Quando acontece |
-|---|---|
-| 200 / 201 | Sucesso |
-| 400 | Dados inválidos (campo obrigatório, quantidade, forma de pagamento, JSON malformado) |
-| 401 | Token ausente/inválido ou e-mail/senha incorretos |
-| 404 | Produto ou item do carrinho não encontrado |
-| 409 | E-mail já cadastrado |
-| 422 | Regra de negócio violada (sem estoque, estoque insuficiente, carrinho vazio) |

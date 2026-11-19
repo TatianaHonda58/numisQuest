@@ -1,42 +1,31 @@
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
 const express = require('express');
+const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yaml');
-
-const authRoutes = require('./routes/auth');
-const userRoutes = require('./routes/users');
-const productRoutes = require('./routes/products');
-const cartRoutes = require('./routes/cart');
-const checkoutRoutes = require('./routes/checkout');
-const errorHandler = require('./middleware/errorHandler');
-
-const SWAGGER_PATH = path.join(__dirname, '..', 'docs', 'swagger.yaml');
-const swaggerYaml = fs.readFileSync(SWAGGER_PATH, 'utf8');
-const swaggerDocument = YAML.parse(swaggerYaml);
+const apiRoutes = require('./routes');
+const { errorHandler } = require('./middlewares/errorHandler');
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
-// Documentação da API (Swagger)
-app.get('/api-docs/swagger.yaml', (req, res) => {
-  res.type('application/yaml').send(swaggerYaml);
+const swaggerPath = path.join(__dirname, '..', 'docs', 'swagger.yaml');
+const swaggerRaw = fs.readFileSync(swaggerPath, 'utf8');
+const swaggerDoc = YAML.parse(swaggerRaw);
+
+app.get('/api-docs/swagger.yaml', (_req, res) => {
+  res.type('text/yaml').send(swaggerRaw);
 });
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
-  customSiteTitle: 'E-commerce API - Swagger'
-}));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
-// API REST
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/cart', cartRoutes);
-app.use('/api/checkout', checkoutRoutes);
-app.use('/api', (req, res) => res.status(404).json({ error: 'Rota não encontrada.' }));
+app.use('/api', apiRoutes);
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Site Web
-app.use(express.static(path.join(__dirname, '..', 'public'), { extensions: ['html'] }));
+app.get(['/login', '/cadastro', '/identificador', '/desafios'], (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', `${req.path.slice(1)}.html`));
+});
 
 app.use(errorHandler);
 

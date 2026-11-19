@@ -1,64 +1,62 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Entrar | Loja PPP</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — NumisQuest</title>
+  <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
   <header class="header">
-    <div class="header-inner">
-      <a class="brand" href="/">🛒 Loja PPP</a>
+    <div class="header__inner">
+      <a class="brand" href="/">NumisQuest</a>
       <nav class="nav" id="nav"></nav>
     </div>
   </header>
+
   <main class="container">
-    <form id="login-form" class="card form" novalidate>
-      <h1>Entrar</h1>
-      <p class="subtitle">Acesse sua conta para comprar.</p>
-      <div id="alert" class="alert hidden" role="alert"></div>
-      <div class="field">
-        <label for="email">E-mail</label>
-        <input id="email" name="email" type="email" autocomplete="username" required>
-      </div>
-      <div class="field">
-        <label for="password">Senha</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" required>
-      </div>
-      <button class="btn block" type="submit">Entrar</button>
-      <p class="hint">Ainda não tem conta? <a href="/cadastro">Cadastre-se</a></p>
-    </form>
+    <h1>Login</h1>
+    <p class="subtitle">Acesse sua conta para participar dos desafios e acompanhar suas conquistas.</p>
+
+    <div id="alert" hidden></div>
+
+    <div class="card" style="max-width: 440px;">
+      <form id="login-form" class="form">
+        <div class="field">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" required placeholder="seu@email.com" />
+        </div>
+
+        <div class="field">
+          <label for="password">Senha</label>
+          <input type="password" id="password" required placeholder="******" />
+        </div>
+
+        <button type="submit" class="btn">Entrar</button>
+      </form>
+    </div>
   </main>
+
   <script src="/js/app.js"></script>
   <script>
-    const form = document.getElementById('login-form');
-    const alertBox = document.getElementById('alert');
-    const params = new URLSearchParams(window.location.search);
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const alertEl = document.getElementById('alert');
+      clearAlert(alertEl);
 
-    if (params.get('cadastro') === 'ok') showAlert(alertBox, 'Cadastro realizado! Faça login para continuar.', 'success');
-    if (params.get('expirado') === '1') showAlert(alertBox, 'Sua sessão expirou. Faça login novamente.', 'info');
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
 
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      hideAlert(alertBox);
-      if (!form.email.value.trim() || !form.password.value) {
-        showAlert(alertBox, 'Informe e-mail e senha.');
-        return;
-      }
-      const button = form.querySelector('button');
-      button.disabled = true;
       try {
-        const { token, user } = await api('/auth/login', {
+        const session = await apiFetch('/api/auth/login', {
           method: 'POST',
-          body: { email: form.email.value.trim(), password: form.password.value }
+          body: { email, password }
         });
-        session.save(token, user);
-        const back = params.get('voltar');
-        window.location.href = back && back.startsWith('/') && !back.startsWith('//') ? back : '/';
-      } catch (error) {
-        showAlert(alertBox, error.message);
-        button.disabled = false;
+        setSession(session);
+        const params = new URLSearchParams(window.location.search);
+        window.location.href = params.get('redirect') || '/desafios';
+      } catch (err) {
+        showAlert(alertEl, err.message, 'error');
       }
     });
   </script>

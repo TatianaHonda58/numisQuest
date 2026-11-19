@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Identificador de Moedas — NumisQuest</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="header__inner">
+      <a class="brand" href="/">NumisQuest</a>
+      <nav class="nav" id="nav"></nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1>🔍 Identificador de Moedas e Cédulas</h1>
+    <p class="subtitle">Informe uma ou mais características físicas ou visuais da peça para encontrar correspondências no catálogo.</p>
+
+    <div id="alert" hidden></div>
+
+    <section class="summary-box">
+      <form id="identify-form" class="grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:16px;">
+        <div class="field">
+          <label for="id-pais">País de Origem</label>
+          <input type="text" id="id-pais" placeholder="Ex: Brasil" />
+        </div>
+
+        <div class="field">
+          <label for="id-tipo">Tipo de Peça</label>
+          <select id="id-tipo">
+            <option value="">Qualquer</option>
+            <option value="Moeda">Moeda</option>
+            <option value="Cédula">Cédula</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="id-ano">Ano de Fabricação (±5 anos)</label>
+          <input type="number" id="id-ano" placeholder="Ex: 1901 ou 2012" />
+        </div>
+
+        <div class="field">
+          <label for="id-valor">Valor Facial</label>
+          <input type="text" id="id-valor" placeholder="Ex: 100 Réis, 1 Real" />
+        </div>
+
+        <div class="field">
+          <label for="id-material">Material</label>
+          <input type="text" id="id-material" placeholder="Ex: Cuproníquel, Bimetálica" />
+        </div>
+
+        <div class="field">
+          <label for="id-formato">Formato</label>
+          <input type="text" id="id-formato" placeholder="Ex: Circular, Retangular" />
+        </div>
+
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="id-visual">Características Visuais / Inscrições</label>
+          <input type="text" id="id-visual" placeholder="Ex: Bandeira Olímpica, Efígie da Baiana, Barrete frígio..." />
+        </div>
+
+        <div class="row" style="grid-column: 1 / -1;">
+          <button type="submit" class="btn">Identificar Peça</button>
+          <button type="button" class="btn btn--ghost" onclick="clearIdentifier()">Limpar Campos</button>
+        </div>
+      </form>
+    </section>
+
+    <div id="results-header" style="margin-bottom:16px; font-weight:700;"></div>
+    <div id="results-grid" class="grid"></div>
+  </main>
+
+  <script src="/js/app.js"></script>
+  <script>
+    document.getElementById('identify-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const alertEl = document.getElementById('alert');
+      const headerEl = document.getElementById('results-header');
+      const gridEl = document.getElementById('results-grid');
+      clearAlert(alertEl);
+      headerEl.textContent = '';
+      gridEl.innerHTML = '';
+
+      const payload = {
+        pais: document.getElementById('id-pais').value,
+        tipo: document.getElementById('id-tipo').value,
+        anoEmissao: document.getElementById('id-ano').value,
+        valorFacial: document.getElementById('id-valor').value,
+        material: document.getElementById('id-material').value,
+        formato: document.getElementById('id-formato').value,
+        caracteristicaVisual: document.getElementById('id-visual').value
+      };
+
+      try {
+        const { total, matches } = await apiFetch('/api/items/identify', {
+          method: 'POST',
+          body: payload
+        });
+
+        if (!total) {
+          headerEl.textContent = 'Nenhuma correspondência encontrada. Tente ampliar ou alterar os critérios.';
+          return;
+        }
+
+        headerEl.textContent = `Foram encontradas ${total} correspondência(s) ordenada(s) por compatibilidade:`;
+
+        gridEl.innerHTML = matches.map(({ item, compatibilidade, detalhesMatch }) => `
+          <article class="card item-card">
+            <div class="row" style="justify-content:space-between;">
+              <span class="badge">${item.tipo}</span>
+              <span class="badge badge--raro">${compatibilidade}% de Compatibilidade</span>
+            </div>
+
+            ${item.imageFront && item.imageBack ? `
+              <div style="display:flex; gap:8px; justify-content:center; background:#fffaf0; border:1px solid var(--border); border-radius:8px; padding:8px;">
+                <img src="${item.imageFront}" alt="Anverso" style="width:48%; height:110px; object-fit:contain;" />
+                <img src="${item.imageBack}" alt="Reverso" style="width:48%; height:110px; object-fit:contain;" />
+              </div>
+            ` : ''}
+
+            <h3>${item.titulo}</h3>
+            <p class="item-card__meta">
+              <strong>Critérios compatíveis:</strong> ${detalhesMatch.join(', ')}<br/>
+              <strong>País:</strong> ${item.pais} | <strong>Ano:</strong> ${item.anoEmissao}<br/>
+              <strong>Material:</strong> ${item.material} | <strong>Peso:</strong> ${item.peso}<br/>
+              <strong>Código de Catálogo:</strong> ${item.codigoCatalogo}
+            </p>
+            <p class="item-card__meta" style="margin-top:auto; padding-top:8px; border-top:1px dashed var(--border);">
+              ${item.historico}
+            </p>
+          </article>
+        `).join('');
+      } catch (err) {
+        showAlert(alertEl, err.message, 'error');
+      }
+    });
+
+    function clearIdentifier() {
+      document.getElementById('identify-form').reset();
+      document.getElementById('results-header').textContent = '';
+      document.getElementById('results-grid').innerHTML = '';
+      clearAlert(document.getElementById('alert'));
+    }
+  </script>
+</body>
+</html>

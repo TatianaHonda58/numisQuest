@@ -1,175 +1,470 @@
 :root {
-  --bg: #f6f7fb;
-  --surface: #ffffff;
-  --text: #1d2433;
-  --muted: #667085;
-  --border: #e4e7ec;
-  --primary: #4f46e5;
-  --primary-dark: #4338ca;
-  --success: #067647;
-  --success-bg: #ecfdf3;
-  --danger: #b42318;
-  --danger-bg: #fef3f2;
-  --vip: #b54708;
-  --vip-bg: #fffaeb;
-  --radius: 12px;
+  --bg: #e8d5b5;
+  --surface: #fffdf8;
+  --border: #cbb389;
+  --text: #2c1e12;
+  --muted: #5c432d;
+  --primary: #7c3f0c;        /* Couro / Bronze antigo */
+  --primary-hover: #5e2e07;  /* Sépia escuro */
+  --gold-accent: #c27803;    /* Ouro antigo */
+  --treasure-red: #991b1b;   /* Vermelho lacre / X do tesouro */
+  --danger: #b91c1c;
+  --success: #15803d;
+  --warning-bg: #fef3c7;
+  --warning-text: #92400e;
+  --radius: 10px;
+  --shadow-sm: 0 6px 18px rgba(62, 39, 18, 0.14);
+  --shadow-md: 0 12px 28px rgba(62, 39, 18, 0.22);
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  background: var(--bg);
+  font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
   color: var(--text);
-  line-height: 1.5;
+  line-height: 1.55;
+  min-height: 100vh;
+
+  /* Papel de parede: Mapa do Tesouro Antigo (Pergaminho, Rosa dos Ventos, Rota Tracejada e X) */
+  background-color: #e6d2b0;
+  background-image:
+    /* Bordas envelhecidas (efeito pergaminho queimado nas laterais) */
+    radial-gradient(ellipse at center, rgba(255, 249, 235, 0.35) 35%, rgba(139, 94, 52, 0.32) 100%),
+    /* Padrão de Mapa Náutico / Tesouro em SVG */
+    url("data:image/svg+xml,%3Csvg width='260' height='260' viewBox='0 0 260 260' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3C!-- Grade cartográfica (latitude e longitude) --%3E%3Cline x1='0' y1='65' x2='260' y2='65' stroke='%23784b26' stroke-opacity='0.10' stroke-width='1'/%3E%3Cline x1='0' y1='195' x2='260' y2='195' stroke='%23784b26' stroke-opacity='0.10' stroke-width='1'/%3E%3Cline x1='65' y1='0' x2='65' y2='260' stroke='%23784b26' stroke-opacity='0.10' stroke-width='1'/%3E%3Cline x1='195' y1='0' x2='195' y2='260' stroke='%23784b26' stroke-opacity='0.10' stroke-width='1'/%3E%3C!-- Rosa dos Ventos --%3E%3Cg transform='translate(65, 65)' stroke='%236b3e19' stroke-opacity='0.20' stroke-width='1.2'%3E%3Ccircle cx='0' cy='0' r='22'/%3E%3Ccircle cx='0' cy='0' r='17' stroke-dasharray='2 2'/%3E%3Cpolygon points='0,-28 4,-4 28,0 4,4 0,28 -4,4 -28,0 -4,-4' fill='%236b3e19' fill-opacity='0.12'/%3E%3Cpolygon points='-14,-14 0,-3 14,-14 3,0 14,14 0,3 -14,14 -3,0'/%3E%3C/g%3E%3C!-- Rota do tesouro tracejada --%3E%3Cpath d='M 92 78 Q 145 105, 132 148 T 188 192' stroke='%2378350f' stroke-opacity='0.24' stroke-width='2' stroke-dasharray='6 6' stroke-linecap='round'/%3E%3C!-- O X que marca o tesouro --%3E%3Cg transform='translate(198, 198)' stroke='%23991b1b' stroke-opacity='0.28' stroke-width='3.2' stroke-linecap='round'%3E%3Cline x1='-10' y1='-10' x2='10' y2='10'/%3E%3Cline x1='10' y1='-10' x2='-10' y2='10'/%3E%3C/g%3E%3C!-- Contorno sutil de ilha / continente --%3E%3Cpath d='M 155 35 C 175 28, 210 32, 222 50 C 232 65, 215 88, 192 85 C 170 82, 148 52, 155 35 Z' stroke='%23784b26' stroke-opacity='0.14' stroke-width='1.3' fill='%23b48246' fill-opacity='0.05'/%3E%3C!-- Moeda antiga no canto inferior esquerdo --%3E%3Ccircle cx='58' cy='202' r='15' stroke='%23b45309' stroke-opacity='0.20' stroke-width='1.4'/%3E%3Ccircle cx='58' cy='202' r='11' stroke='%23b45309' stroke-opacity='0.15' stroke-width='1' stroke-dasharray='2 2'/%3E%3Ctext x='58' y='207' text-anchor='middle' font-family='Georgia, serif' font-size='13' font-weight='bold' fill='%23b45309' fill-opacity='0.20'%3E$%3C/text%3E%3C/g%3E%3C/svg%3E");
+  background-attachment: fixed;
 }
 
-a { color: var(--primary); text-decoration: none; }
-a:hover { text-decoration: underline; }
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
 
+a:hover {
+  color: var(--primary-hover);
+}
+
+/* Cabeçalho estilo diário de bordo / vitrine */
 .header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  background: rgba(255, 250, 240, 0.94);
+  backdrop-filter: blur(8px);
+  border-bottom: 2px solid var(--border);
+  box-shadow: 0 3px 12px rgba(62, 39, 18, 0.10);
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
-.header-inner, .container {
-  max-width: 1040px;
+.header__inner {
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 0 16px;
-}
-
-.header-inner {
+  padding: 0 24px;
+  min-height: 68px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  min-height: 64px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
-.brand { font-weight: 700; font-size: 1.2rem; color: var(--text); }
-.brand:hover { text-decoration: none; }
+.brand {
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: #4a2508;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-.nav { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.nav .user { color: var(--muted); font-size: .95rem; }
+.brand::before {
+  content: "🧭";
+  font-size: 1.4rem;
+}
 
-.container { padding-top: 32px; padding-bottom: 48px; }
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
 
-h1 { font-size: 1.6rem; margin: 0 0 8px; }
-.subtitle { color: var(--muted); margin: 0 0 24px; }
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 36px 24px 72px;
+}
 
+h1 {
+  font-size: 1.95rem;
+  font-weight: 800;
+  margin: 0 0 6px;
+  color: #361b06;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  color: #4e3520;
+  font-weight: 500;
+  margin: 0 0 28px;
+  font-size: 1.02rem;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+/* Grid e Cards estilo ficha de expedição */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  align-items: stretch;
 }
 
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
+  border-top: 4px solid var(--gold-accent);
   border-radius: var(--radius);
-  padding: 20px;
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.product { display: flex; flex-direction: column; gap: 10px; }
-.product-thumb {
-  height: 140px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  font-size: 3rem;
-  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+.item-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
 }
-.product h2 { font-size: 1.1rem; margin: 0; }
-.product p { color: var(--muted); margin: 0; font-size: .92rem; flex: 1; }
-.price { font-size: 1.3rem; font-weight: 700; }
-.stock { font-size: .85rem; color: var(--muted); }
-.stock.out { color: var(--danger); font-weight: 600; }
 
-.row { display: flex; gap: 8px; align-items: center; }
+.item-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
 
-.btn {
-  appearance: none;
-  border: 1px solid var(--primary);
-  background: var(--primary);
-  color: #fff;
-  font: inherit;
+.item-card h3 {
+  margin: 4px 0 0;
+  font-size: 1.15rem;
+  color: #2c1e12;
+  line-height: 1.35;
+}
+
+.item-card__meta {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Alinha preço e botões na base de todos os cards */
+.item-card__price {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+/* Badges / Selos */
+.badge {
+  display: inline-block;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.badge--raro {
+  background: #fee2e2;
+  color: var(--treasure-red);
+  border-color: #fca5a5;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Formulários e Inputs */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 440px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+label {
+  font-size: 0.9rem;
   font-weight: 600;
-  padding: 10px 16px;
-  border-radius: 8px;
-  cursor: pointer;
+  color: #2c1e12;
 }
-.btn:hover:not(:disabled) { background: var(--primary-dark); }
-.btn:disabled { opacity: .5; cursor: not-allowed; }
-.btn.secondary { background: transparent; color: var(--primary); }
-.btn.link { background: none; border: none; color: var(--danger); padding: 4px; font-weight: 500; }
-.btn.block { width: 100%; }
 
 input, select {
-  font: inherit;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  width: 100%;
-  background: #fff;
+  font: inherit;
+  background: #fffaf0;
+  color: var(--text);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-input.qty { width: 72px; }
 
-.form { max-width: 420px; margin: 0 auto; }
-.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-.field label { font-weight: 600; font-size: .92rem; }
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--gold-accent);
+  box-shadow: 0 0 0 3px rgba(194, 120, 3, 0.18);
+}
 
-.alert {
-  padding: 12px 14px;
+/* Botões estilo couro / bronze antigo */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
   border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: .95rem;
+  border: 1px solid #5e2e07;
+  background: linear-gradient(180deg, #924b10 0%, #6d3508 100%);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(62, 39, 18, 0.25);
+  transition: all 0.15s ease;
 }
-.alert.error { background: var(--danger-bg); color: var(--danger); }
-.alert.success { background: var(--success-bg); color: var(--success); }
-.alert.info { background: #eff8ff; color: #175cd3; }
-.hidden { display: none !important; }
 
-.badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: .8rem;
+.btn:hover {
+  background: linear-gradient(180deg, #7c3f0c 0%, #572905 100%);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.btn--ghost {
+  background: #fffaf0;
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.btn--ghost:hover {
+  background: #f3e6cf;
+  color: var(--primary);
+}
+
+.btn--danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: #fca5a5;
+  box-shadow: none;
+}
+
+.btn--danger:hover {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+/* Alertas */
+.alert {
+  padding: 13px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.alert--error {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: var(--danger);
+}
+
+.alert--success {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: var(--success);
+}
+
+/* Galeria Anverso / Reverso nos cards */
+.coin-gallery {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  background: #fffaf0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.coin-gallery img {
+  width: 48%;
+  height: 115px;
+  object-fit: contain;
+}
+
+/* Painel expansível de História */
+.history-details {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.history-details summary {
+  cursor: pointer;
   font-weight: 700;
+  color: var(--primary);
 }
-.badge.vip { background: var(--vip-bg); color: var(--vip); }
 
-.cart-layout {
+/* Opções de resposta nos Desafios */
+.quiz-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+  cursor: pointer;
+  background: #fffaf0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.quiz-option:hover {
+  background: #f5ebd6;
+  border-color: var(--gold-accent);
+}
+
+.summary-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--treasure-red);
+  border-radius: var(--radius);
+  padding: 22px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+}
+  .badge--success {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+
+/* Grade organizada para a barra de filtros do Catálogo */
+.filter-grid {
   display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 20px;
-  align-items: start;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 14px;
+  align-items: end;
 }
 
-table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 12px 8px; border-bottom: 1px solid var(--border); }
-th { font-size: .85rem; color: var(--muted); font-weight: 600; }
-td.num, th.num { text-align: right; white-space: nowrap; }
-
-.summary-line { display: flex; justify-content: space-between; padding: 6px 0; }
-.summary-line.total { font-size: 1.2rem; font-weight: 700; border-top: 1px solid var(--border); margin-top: 8px; padding-top: 12px; }
-.summary-line .discount { color: var(--success); }
-
-.payment-options { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 16px; }
-.payment-options label {
-  display: flex; gap: 10px; align-items: center;
-  border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; cursor: pointer;
+.filter-grid .col-search { grid-column: span 6; }
+.filter-grid .col-tipo   { grid-column: span 3; }
+.filter-grid .col-ano    { grid-column: span 3; }
+.filter-grid .col-pais   { grid-column: span 4; }
+.filter-grid .col-mat    { grid-column: span 5; }
+.filter-grid .col-actions {
+  grid-column: span 3;
+  display: flex;
+  gap: 8px;
 }
-.payment-options input { width: auto; }
-.hint { color: var(--muted); font-size: .85rem; }
 
-.empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+.filter-grid .col-actions .btn {
+  flex: 1;
+}
 
-@media (max-width: 760px) {
-  .cart-layout { grid-template-columns: 1fr; }
-  .table-wrap { overflow-x: auto; }
+@media (max-width: 768px) {
+  .filter-grid .col-search,
+  .filter-grid .col-tipo,
+  .filter-grid .col-ano,
+  .filter-grid .col-pais,
+  .filter-grid .col-mat,
+  .filter-grid .col-actions {
+    grid-column: span 12;
+  }
+}
+
+/* Cursor de lupa nas miniaturas do catálogo */
+.coin-gallery img {
+  cursor: zoom-in;
+  transition: transform 0.2s ease;
+}
+
+.coin-gallery img:hover {
+  transform: scale(1.04);
+}
+
+/* Modal (Pop-up) de visualização ampliada */
+.image-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 16, 6, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.image-modal[hidden] {
+  display: none;
+}
+
+.image-modal__box {
+  background: #fffaf0;
+  border: 2px solid var(--gold-accent, #b45309);
+  border-radius: 12px;
+  max-width: 720px;
+  width: 100%;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+}
+
+.image-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.image-modal__img-wrap {
+  overflow: auto;
+  max-height: 70vh;
+  background: #1a120b;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.image-modal__img-wrap img {
+  max-width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+  cursor: zoom-in;
+}
+
+.image-modal__img-wrap img.is-zoomed {
+  max-width: none;
+  max-height: none;
+  transform: scale(1.6);
+  transform-origin: center top;
+  cursor: zoom-out;
 }

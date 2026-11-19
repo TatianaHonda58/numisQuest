@@ -1,7 +1,7 @@
 {
-  "name": "ppp-ecommerce",
+  "name": "catalogo-numismatico",
   "version": "1.0.0",
-  "description": "API REST e site Web de um e-commerce com Login, Cadastro, Carrinho e Finalização de Compra",
+  "description": "API REST e site Web de Catálogo Numismático e Gestão de Acervo Pessoal (Login, Cadastro, Catálogo e Acervo)",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -13,6 +13,7 @@
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
     "express": "^5.3.0",
     "jsonwebtoken": "^9.0.3",
     "mongodb-memory-server": "^11.3.0",

@@ -1,552 +1,191 @@
 openapi: 3.0.3
 info:
-  title: E-commerce API
-  version: 1.0.0
+  title: NumisQuest — Catálogo, Identificador & Desafios API
   description: |
-    API REST de um e-commerce com quatro funcionalidades: **Login**, **Cadastro**,
-    **Carrinho** e **Finalização de Compra**.
+    API RESTful da plataforma **NumisQuest** voltada ao universo da numismática, com três pilares:
+    **Catálogo de Moedas e Cédulas**, **Identificador de Moedas** e **Desafios & Conquistas**.
 
     ### Regras de negócio
-    1. Pagamento em dinheiro (`cash`) recebe **10% de desconto** sobre o subtotal dos produtos.
-    2. Produtos só podem ser adicionados ao carrinho se houver **estoque** suficiente.
-    3. Apenas clientes **VIP** têm **frete grátis**. Os demais pagam frete fixo de R$ 20,00.
-       O cliente se torna VIP quando o total gasto em compras chega a **R$ 300,00**;
-       o frete grátis vale a partir da compra seguinte.
-
-    ### Autenticação
-    Faça login em `POST /api/auth/login`, copie o `token` e clique em **Authorize**
-    para informá-lo. As rotas de carrinho, finalização de compra e usuário exigem o token.
-
-    ### Dados de teste
-    | Usuário | E-mail | Senha | Total gasto | VIP |
-    |---|---|---|---|---|
-    | Ana Silva | ana@email.com | 123456 | R$ 0,00 | Não |
-    | Bruno Souza | bruno@email.com | 123456 | R$ 280,00 | Não |
-    | Carla Lima | carla@email.com | 123456 | R$ 450,00 | Sim |
+    1. **Unicidade de Cadastro:** Não permite dois exploradores com o mesmo e-mail ou username (`HTTP 409`).
+    2. **Identificador de Moedas:** Exige ao menos 1 critério de busca (`HTTP 400` se vazio) e calcula percentual de compatibilidade.
+    3. **Níveis de Experiência (XP):** Explorador Iniciante (`0-99` pts), Curador de Museu (`100-249` pts) e Mestre Numismata (`250+` pts).
+    4. **Idempotência de Desafios:** Cada desafio concluído só concede pontos e medalhas uma única vez por usuário (`HTTP 422`).
+  version: 2.0.0
 servers:
-  - url: http://localhost:3030
-    description: Ambiente local
-tags:
-  - name: Login
-  - name: Cadastro
-  - name: Usuário
-  - name: Produtos
-  - name: Carrinho
-  - name: Finalização de Compra
-paths:
-  /api/auth/register:
-    post:
-      tags: [Cadastro]
-      summary: Cadastra um novo cliente
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegisterRequest'
-            example:
-              name: Diego Rocha
-              email: diego@email.com
-              password: '123456'
-      responses:
-        '201':
-          description: Cliente cadastrado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user:
-                    $ref: '#/components/schemas/User'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '409':
-          description: E-mail já cadastrado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: Já existe um usuário cadastrado com este e-mail.
-  /api/auth/login:
-    post:
-      tags: [Login]
-      summary: Autentica um cliente e retorna um token JWT
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
-            example:
-              email: ana@email.com
-              password: '123456'
-      responses:
-        '200':
-          description: Login realizado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LoginResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          description: Credenciais inválidas
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: E-mail ou senha inválidos.
-  /api/users/me:
-    get:
-      tags: [Usuário]
-      summary: Retorna os dados do cliente autenticado (inclui total gasto e status VIP)
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Cliente autenticado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user:
-                    $ref: '#/components/schemas/User'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-  /api/products:
-    get:
-      tags: [Produtos]
-      summary: Lista os produtos
-      responses:
-        '200':
-          description: Lista de produtos
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  products:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Product'
-  /api/products/{id}:
-    get:
-      tags: [Produtos]
-      summary: Detalha um produto
-      parameters:
-        - $ref: '#/components/parameters/ProductIdPath'
-      responses:
-        '200':
-          description: Produto
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  product:
-                    $ref: '#/components/schemas/Product'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /api/cart:
-    get:
-      tags: [Carrinho]
-      summary: Retorna o carrinho do cliente autenticado
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Carrinho
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Cart'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-    delete:
-      tags: [Carrinho]
-      summary: Esvazia o carrinho
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Carrinho vazio
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Cart'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-  /api/cart/items:
-    post:
-      tags: [Carrinho]
-      summary: Adiciona um produto ao carrinho
-      description: |
-        Se o produto já estiver no carrinho, a quantidade é somada.
-        **Regra:** a quantidade total no carrinho não pode ultrapassar o estoque do produto;
-        produtos sem estoque não podem ser adicionados (HTTP 422).
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddCartItemRequest'
-      responses:
-        '201':
-          description: Produto adicionado; retorna o carrinho atualizado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Cart'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/BusinessRule'
-  /api/cart/items/{productId}:
-    parameters:
-      - name: productId
-        in: path
-        required: true
-        schema:
-          type: string
-        description: Id do produto no carrinho
-    patch:
-      tags: [Carrinho]
-      summary: Altera a quantidade de um produto no carrinho
-      description: A nova quantidade não pode ultrapassar o estoque do produto (HTTP 422).
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateCartItemRequest'
-      responses:
-        '200':
-          description: Carrinho atualizado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Cart'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/BusinessRule'
-    delete:
-      tags: [Carrinho]
-      summary: Remove um produto do carrinho
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Carrinho atualizado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Cart'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /api/checkout/summary:
-    get:
-      tags: [Finalização de Compra]
-      summary: Prévia dos valores da compra (sem finalizar)
-      description: Calcula subtotal, desconto, frete e total do carrinho atual para a forma de pagamento informada.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: paymentMethod
-          in: query
-          required: true
-          schema:
-            $ref: '#/components/schemas/PaymentMethod'
-      responses:
-        '200':
-          description: Resumo da compra
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CheckoutSummary'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-  /api/checkout:
-    post:
-      tags: [Finalização de Compra]
-      summary: Finaliza a compra do carrinho
-      description: |
-        Valida o estoque, baixa o estoque dos produtos, registra o pedido, soma o total
-        pago ao total gasto do cliente e esvazia o carrinho.
-
-        - `cash` (dinheiro): 10% de desconto sobre o subtotal dos produtos.
-        - Frete: R$ 20,00, ou grátis se o cliente já era VIP no momento da compra.
-        - Se o total gasto chegar a R$ 300,00, o cliente se torna VIP (`becameVip: true`).
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CheckoutRequest'
-            example:
-              paymentMethod: cash
-      responses:
-        '201':
-          description: Compra finalizada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CheckoutResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '422':
-          $ref: '#/components/responses/BusinessRule'
+  - url: http://localhost:3000
+    description: Servidor local
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-  parameters:
-    ProductIdPath:
-      name: id
-      in: path
-      required: true
-      schema:
-        type: string
-      description: Id do produto
-  responses:
-    BadRequest:
-      description: Requisição inválida
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Unauthorized:
-      description: Token ausente, inválido ou expirado
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            error: Token de autenticação não informado.
-    NotFound:
-      description: Recurso não encontrado
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    BusinessRule:
-      description: 'Regra de negócio violada (ex.: estoque insuficiente, carrinho vazio)'
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            error: 'O produto "Monitor 24" Full HD" está sem estoque.'
-  schemas:
-    Error:
-      type: object
-      properties:
-        error:
-          type: string
-    PaymentMethod:
-      type: string
-      enum: [cash, credit_card]
-      description: '`cash` = dinheiro (10% de desconto), `credit_card` = cartão de crédito'
-    RegisterRequest:
-      type: object
-      required: [name, email, password]
-      properties:
-        name:
-          type: string
-          minLength: 2
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          minLength: 6
-    LoginRequest:
-      type: object
-      required: [email, password]
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-    LoginResponse:
-      type: object
-      properties:
-        token:
-          type: string
-          description: Token JWT (válido por 2 horas)
-        user:
-          $ref: '#/components/schemas/User'
-    User:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        email:
-          type: string
-        totalSpent:
-          type: number
-          description: Total gasto em compras (R$)
-        isVip:
-          type: boolean
-    Product:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        price:
-          type: number
-        stock:
-          type: integer
-        imageUrl:
-          type: string
-    AddCartItemRequest:
-      type: object
-      required: [productId]
-      properties:
-        productId:
-          type: string
-        quantity:
-          type: integer
-          minimum: 1
-          default: 1
-    UpdateCartItemRequest:
-      type: object
-      required: [quantity]
-      properties:
-        quantity:
-          type: integer
-          minimum: 1
-    CartItem:
-      type: object
-      properties:
-        productId:
-          type: string
-        name:
-          type: string
-        unitPrice:
-          type: number
-        quantity:
-          type: integer
-        lineTotal:
-          type: number
-        stock:
-          type: integer
-          description: Estoque atual do produto
-    Cart:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/CartItem'
-        totalItems:
-          type: integer
-        subtotal:
-          type: number
-    CheckoutRequest:
-      type: object
-      required: [paymentMethod]
-      properties:
-        paymentMethod:
-          $ref: '#/components/schemas/PaymentMethod'
-    CheckoutSummary:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/CartItem'
-        paymentMethod:
-          $ref: '#/components/schemas/PaymentMethod'
-        isVip:
-          type: boolean
-        subtotal:
-          type: number
-        discount:
-          type: number
-        shipping:
-          type: number
-        total:
-          type: number
-    OrderItem:
-      type: object
-      properties:
-        productId:
-          type: string
-        name:
-          type: string
-        unitPrice:
-          type: number
-        quantity:
-          type: integer
-        lineTotal:
-          type: number
-    Order:
-      type: object
-      properties:
-        id:
-          type: string
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/OrderItem'
-        paymentMethod:
-          $ref: '#/components/schemas/PaymentMethod'
-        subtotal:
-          type: number
-        discount:
-          type: number
-        shipping:
-          type: number
-        total:
-          type: number
-        vipAtPurchase:
-          type: boolean
-          description: Se o cliente já era VIP (frete grátis) nesta compra
-        becameVip:
-          type: boolean
-          description: Se o cliente se tornou VIP com esta compra
-        createdAt:
-          type: string
-          format: date-time
-    CheckoutResponse:
-      type: object
-      properties:
-        order:
-          $ref: '#/components/schemas/Order'
-        user:
-          $ref: '#/components/schemas/User'
+paths:
+  /api/health:
+    get:
+      tags: [Sistema]
+      summary: Verifica saúde da API
+      responses:
+        '200':
+          description: API operacional
+  /api/auth/register:
+    post:
+      tags: [Autenticação]
+      summary: Cadastra um novo explorador
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, username, email, password]
+              properties:
+                name: { type: string, example: "Lucas Mendes" }
+                username: { type: string, example: "lucas_numis" }
+                email: { type: string, example: "lucas@email.com" }
+                password: { type: string, example: "123456" }
+      responses:
+        '201': { description: Usuário cadastrado }
+        '400': { description: Dados inválidos }
+        '409': { description: E-mail ou username já em uso }
+  /api/auth/login:
+    post:
+      tags: [Autenticação]
+      summary: Autentica explorador e retorna token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, example: "denise@email.com" }
+                password: { type: string, example: "123456" }
+      responses:
+        '200': { description: Login realizado com sucesso }
+        '401': { description: Credenciais inválidas }
+  /api/users/me:
+    get:
+      tags: [Explorador]
+      summary: Retorna perfil, XP, nível e medalhas do usuário autenticado
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Dados do perfil }
+        '401': { description: Token ausente ou inválido }
+    patch:
+      tags: [Explorador]
+      summary: Atualiza nome ou username do explorador autenticado
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, example: "Denise Moraes Silva" }
+                username: { type: string, example: "denise_numis" }
+      responses:
+        '200': { description: Perfil atualizado com sucesso }
+        '400': { description: Nenhum campo informado ou valor vazio }
+        '401': { description: Token ausente ou inválido }
+        '409': { description: Nome de usuário (username) já está em uso }
+  /api/items:
+    get:
+      tags: [Catálogo]
+      summary: Lista moedas e cédulas com filtros combinados
+      parameters:
+        - in: query
+          name: tipo
+          schema: { type: string, enum: [Moeda, Cédula] }
+        - in: query
+          name: pais
+          schema: { type: string }
+        - in: query
+          name: ano
+          schema: { type: integer }
+        - in: query
+          name: material
+          schema: { type: string }
+        - in: query
+          name: q
+          schema: { type: string }
+      responses:
+        '200': { description: Lista filtrada de itens }
+  /api/items/{id}:
+    get:
+      tags: [Catálogo]
+      summary: Consulta ficha técnica e histórica completa de uma peça
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Ficha técnica da peça }
+        '400': { description: ID inválido }
+        '404': { description: Peça não encontrada }
+  /api/items/identify:
+    post:
+      tags: [Identificador]
+      summary: Identifica moedas ou cédulas a partir de características físicas/visuais
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pais: { type: string, example: "Brasil" }
+                tipo: { type: string, example: "Moeda" }
+                anoEmissao: { type: integer, example: 2012 }
+                valorFacial: { type: string, example: "1 Real" }
+                material: { type: string, example: "Bimetálica" }
+                formato: { type: string, example: "Circular" }
+                caracteristicaVisual: { type: string, example: "Bandeira Olímpica" }
+      responses:
+        '200': { description: Lista de correspondências ordenadas por compatibilidade }
+        '400': { description: Nenhum critério informado }
+  /api/challenges:
+    get:
+      tags: [Desafios & Conquistas]
+      summary: Lista quizzes, missões e conquistas do usuário
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Desafios e medalhas }
+        '401': { description: Token ausente ou inválido }
+  /api/challenges/{id}/submit:
+    post:
+      tags: [Desafios & Conquistas]
+      summary: Envia resposta de um desafio e computa XP e conquistas
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [selectedOptionIndex]
+              properties:
+                selectedOptionIndex: { type: integer, example: 1 }
+      responses:
+        '200': { description: Resultado da tentativa (acerto ou erro) }
+        '400': { description: Dados inválidos }
+        '401': { description: Token ausente ou inválido }
+        '404': { description: Desafio não encontrado }
+        '422': { description: Desafio já concluído pelo usuário }
+  /api/challenges/progress:
+    delete:
+      tags: [Desafios & Conquistas]
+      summary: Reseta pontuação (XP), desafios concluídos e medalhas do explorador
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Progresso resetado com sucesso }
+        '401': { description: Token ausente ou inválido }
+        '404': { description: Explorador não encontrado }  
